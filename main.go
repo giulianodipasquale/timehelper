@@ -9,23 +9,33 @@ import (
 	"text/tabwriter"
 	"time"
 
+	"github.com/tj/go-naturaldate"
 	"github.com/urfave/cli/v2"
 )
 
 const hpfDateTimeUTC = "20060102150405.000000"
-const description = `A simple command-line tool to convert between various date/time formats and Unix timestamps.
+const description = `timehelper: Convert between date/time formats and Unix timestamps
+
+Usage:
+  timehelper [options] <input>
+  timehelper [options] <unix-timestamp>
+  timehelper [options] <datetime-string>
+
 
 Features:
-- Parse "now" as input
-- Parse Unix timestamps in seconds, milliseconds, microseconds, or nanoseconds (with automatic detection)
-- Parse RFC3339 / RFC3339Nano datetime strings
-- Output a summary of the parsed time across multiple standard formats
+  - Parse natural language dates like "now", "tomorrow", "next week", "last week", "a year ago"
+  - Parse Unix timestamps in seconds, milliseconds, microseconds, or nanoseconds (with automatic detection)
+  - Parse RFC3339 / RFC3339Nano datetime strings
+  - Output a summary of the parsed time across multiple standard formats
 
 Examples:
-  ./timehelper now
-  ./timehelper 1721845200
-  ./timehelper --unit ms 1721845200000
-  ./timehelper 2026-07-23T18:00:00Z`
+  timehelper now
+  timehelper tomorrow
+  timehelper "next week"
+  timehelper "a year ago"
+  timehelper 1721845200
+  timehelper --unit ms 1721845200000
+  timehelper 2026-07-23T18:00:00Z`
 
 var version = "dev"
 
@@ -84,21 +94,24 @@ func run(ctx *cli.Context) error {
 }
 
 func parseInput(input string, unit string) (time.Time, error) {
-	if strings.EqualFold(input, "now") {
-		return time.Now(), nil
-	}
-
+	// Handle Unix timestamps (in seconds, milliseconds, microseconds, or nanoseconds)
 	if n, err := strconv.ParseInt(input, 10, 64); err == nil {
 		return parseUnix(n, input, unit)
 	}
 
+	// Try parsing with naturaldate first (for phrases like "tomorrow", "next week", etc.)
+	if t, err := naturaldate.Parse(input, time.Now()); err == nil {
+		return t, nil
+	}
+
+	// Try parsing as a datetime string (RFC3339/RFC3339Nano)
 	if t, err := parseDateTime(input); err == nil {
 		return t, nil
 	}
 
 	return time.Time{}, fmt.Errorf(
-		"unsupported input %q; expected \"now\", a Unix timestamp, or "+
-			"RFC3339/RFC3339Nano",
+		"unsupported input %q; expected natural language date (\"now\", \"tomorrow\", \"next week\", etc...), a Unix timestamp, "+
+			"or a RFC3339/RFC3339Nano datetime string",
 		input,
 	)
 }
