@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: write
+  checks: write
 
 jobs:
   test:
@@ -37,12 +38,16 @@ jobs:
           go test -coverprofile=coverage.txt ./...
           go tool gocover-cobertura < coverage.txt > coverage.xml
 
+      - name: Verify coverage file exists
+        run: test -s coverage.xml
+
       - name: Upload code coverage
         uses: actions/upload-code-coverage@v1
         with:
           file: coverage.xml
-          fail-on-error: false
           language: go
+          label: code-coverage/go
+          fail-on-error: false
 
   release:
     name: Release
