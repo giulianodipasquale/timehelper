@@ -32,8 +32,15 @@ jobs:
       - name: Run go vet
         run: go vet ./...
 
-      - name: Run tests
-        run: go test ./...
+      - name: Run tests with coverage
+        run: |
+          go test -coverprofile=coverage.txt ./...
+          go tool gocover-cobertura < coverage.txt > coverage.xml
+
+      - name: Upload code coverage
+        uses: actions/upload-code-coverage@v1
+        with:
+          coverage-file: coverage.xml
 
   release:
     name: Release
