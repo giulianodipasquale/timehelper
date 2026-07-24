@@ -41,6 +41,7 @@ jobs:
         uses: actions/upload-code-coverage@v1
         with:
           file: coverage.xml
+          fail-on-error: false
           language: go
 
   release:
